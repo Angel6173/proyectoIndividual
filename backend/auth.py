@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 import jwt
 from datetime import datetime, timedelta
-from database import get_db_connection
+from .database import get_db_connection
 import hashlib
 
 auth_bp = Blueprint('auth', __name__)

@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, session
-from database import get_db_connection
+from ..database import get_db_connection
 
 admin_api_bp = Blueprint('admin_api', __name__)
 

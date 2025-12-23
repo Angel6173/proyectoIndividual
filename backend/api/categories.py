@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from database import get_db_connection
+from ..database import get_db_connection
 from auth import verify_token
 
 categories_bp = Blueprint('categories', __name__)

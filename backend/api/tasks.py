@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from database import get_db_connection
+from ..database import get_db_connection
 from auth import verify_token
 
 tasks_bp = Blueprint('tasks', __name__)
