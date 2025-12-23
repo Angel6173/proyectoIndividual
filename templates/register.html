@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - TaskFlow</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>📝 Crear Cuenta Nueva</h1>
+            <p style="text-align:center; color:#666; margin-bottom:2rem;">
+                Llena los campos para registrarte
+            </p>
+
+            <form id="registerForm">
+                <input type="text" id="nombre" placeholder="Nombre completo" required>
+                <input type="email" id="email" placeholder="Correo electrónico" required>
+                <input type="password" id="password" placeholder="Contraseña (mínimo 6 caracteres)" required minlength="6">
+                
+                <button type="submit">Registrarse</button>
+            </form>
+
+            <p id="mensaje" style="margin-top:1rem; text-align:center;"></p>
+
+            <p style="margin-top:2rem; text-align:center;">
+                ¿Ya tienes cuenta? <a href="/login">Inicia sesión aquí</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Script simple SIN Vue para evitar errores de carga -->
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault(); // Evita que la página se recargue
+
+            const nombre = document.getElementById('nombre').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            const mensaje = document.getElementById('mensaje');
+            mensaje.textContent = '';
+            mensaje.style.color = '#666';
+
+            if (!nombre || !email || password.length < 6) {
+                mensaje.textContent = 'Por favor completa todos los campos correctamente';
+                mensaje.style.color = '#e53e3e';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ nombre, email, password })
+                });
+
+                const data = await res.json();
+
+                if (res.status === 201) {
+                    mensaje.textContent = '¡Cuenta creada exitosamente! Redirigiendo al login...';
+                    mensaje.style.color = '#48bb78';
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    mensaje.textContent = data.error || 'Error al registrar. Intenta con otro email.';
+                    mensaje.style.color = '#e53e3e';
+                }
+            } catch (err) {
+                mensaje.textContent = 'Error de conexión. Revisa que el servidor esté corriendo.';
+                mensaje.style.color = '#e53e3e';
+            }
+        });
+    </script>
+</body>
+</html>

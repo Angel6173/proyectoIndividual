@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow - Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav>
+        <a href="/">Inicio</a>
+        <a href="/tasks">Mis Tareas</a>
+        <a href="javascript:logout()">Cerrar Sesión</a>
+    </nav>
+
+    <div class="container">
+        <div class="card">
+            <h1>¡Bienvenido a TaskFlow! 🚀</h1>
+            <p style="text-align:center; font-size:1.2rem; color:#666; margin-bottom:2rem;">
+                Gestiona tus tareas de forma simple y efectiva
+            </p>
+
+            <div class="stats" id="app">
+                <div class="stat-card">
+                    <strong>{{ total }}</strong>
+                    Tareas Totales
+                </div>
+                <div class="stat-card">
+                    <strong>{{ completadas }}</strong>
+                    Completadas
+                </div>
+                <div class="stat-card">
+                    <strong>{{ pendientes }}</strong>
+                    Pendientes
+                </div>
+                <div class="stat-card">
+                    <strong>{{ productividad }}%</strong>
+                    Productividad
+                </div>
+            </div>
+
+            <div style="text-align:center; margin-top:3rem;">
+                <a href="/tasks" style="display:inline-block; padding:1rem 2.5rem; background:#667eea; color:white; text-decoration:none; border-radius:12px; font-weight:bold; font-size:1.1rem;">
+                    Ir a Mis Tareas →
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vue 3 desde CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="/static/script.js"></script>
+    <script>
+        const { createApp } = Vue
+        
+        createApp({
+            data() {
+                return {
+                    total: 0,
+                    completadas: 0,
+                    pendientes: 0,
+                    productividad: 0
+                }
+            },
+            async mounted() {
+                const res = await authFetch('/api/tasks');
+                if (res.ok) {
+                    const tasks = await res.json();
+                    this.total = tasks.length;
+                    this.completadas = tasks.filter(t => t.completada).length;
+                    this.pendientes = this.total - this.completadas;
+                    this.productividad = this.total > 0 ? Math.round((this.completadas / this.total) * 100) : 0;
+                } else {
+                    // Si no hay token, redirige al login
+                    window.location.href = '/login';
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>

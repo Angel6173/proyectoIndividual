@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - TaskFlow</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🔐 Iniciar Sesión</h1>
+            <div id="app">
+                <input type="email" v-model="email" placeholder="Email">
+                <input type="password" v-model="password" placeholder="Contraseña" @keyup.enter="login">
+                <button @click="login">Entrar</button>
+                <p class="error" v-if="error">{{ error }}</p>
+                <p>¿No tienes cuenta? <a href="/register">Regístrate aquí</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/vue@3"></script>
+    <script>
+        Vue.createApp({
+            data() {
+                return { email: '', password: '', error: '' }
+            },
+            methods: {
+                async login() {
+                    const res = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: this.email, password: this.password })
+                    });
+                    const data = await res.json();
+                    if (data.token) {
+                        localStorage.setItem('token', data.token);
+                        window.location.href = '/';
+                    } else {
+                        this.error = data.error || 'Error al iniciar sesión';
+                    }
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Tareas - TaskFlow</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav>
+    <a href="/">Inicio</a>
+    <a href="/tasks">Mis Tareas</a>
+    <a href="javascript:logout()">Cerrar Sesión</a>
+</nav>
+
+<div class="container">
+    <div class="card">
+        <h1>📋 Mis Tareas</h1>
+
+        {% raw %}
+        <div id="app">
+
+            <!-- Nueva tarea -->
+            <div class="card" style="margin-bottom:2rem; background:#f0f4ff;">
+                <h2>Nueva Tarea</h2>
+
+                <input v-model="nueva.titulo" placeholder="Título de la tarea" required>
+
+                <textarea v-model="nueva.descripcion"
+                          placeholder="Descripción (opcional)"
+                          rows="3"></textarea>
+
+                <input type="date" v-model="nueva.fecha_limite">
+
+                <select v-model="nueva.prioridad">
+                    <option value="baja">🟢 Baja</option>
+                    <option value="media">🟡 Media</option>
+                    <option value="alta">🔴 Alta</option>
+                </select>
+
+                <button @click="crearTarea" :disabled="!nueva.titulo.trim()">
+                    + Agregar Tarea
+                </button>
+            </div>
+
+            <!-- Lista de tareas -->
+            <ul class="task-list">
+                <li v-for="task in tareas"
+                    :key="task.id"
+                    :class="['task-item', { completed: task.completada }]">
+
+                    <div class="task-content">
+                        <strong>{{ task.titulo }}</strong>
+
+                        <p v-if="task.descripcion">
+                            {{ task.descripcion }}
+                        </p>
+
+                        <small>
+                            Prioridad:
+                            <strong :style="{ color: colorPrioridad(task.prioridad) }">
+                                {{ task.prioridad.toUpperCase() }}
+                            </strong>
+                            • Vence: {{ formatoFecha(task.fecha_limite) }}
+                        </small>
+                    </div>
+
+                    <div class="task-actions">
+                        <button @click="toggleCompletada(task)">
+                            <span v-if="task.completada">↩️ Desmarcar</span>
+                            <span v-else>✅ Completar</span>
+                        </button>
+
+                        <button @click="eliminarTarea(task.id)"
+                                style="background:#e53e3e;">
+                            🗑️ Eliminar
+                        </button>
+                    </div>
+                </li>
+            </ul>
+
+            <p v-if="tareas.length === 0"
+               style="text-align:center; color:#888; font-size:1.2rem; margin-top:3rem;">
+                🎉 ¡No tienes tareas pendientes! <br>
+                Crea una arriba para comenzar.
+            </p>
+
+        </div>
+        {% endraw %}
+
+    </div>
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="/static/script.js"></script>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+    data() {
+        return {
+            tareas: [],
+            nueva: {
+                titulo: '',
+                descripcion: '',
+                fecha_limite: '',
+                prioridad: 'media'
+            }
+        }
+    },
+    methods: {
+        async cargarTareas() {
+            const res = await authFetch('/api/tasks');
+            if (res.ok) {
+                this.tareas = await res.json();
+            } else {
+                window.location.href = '/login';
+            }
+        },
+        async crearTarea() {
+            if (!this.nueva.titulo.trim()) return;
+
+            await authFetch('/api/tasks', {
+                method: 'POST',
+                body: JSON.stringify(this.nueva)
+            });
+
+            this.nueva = {
+                titulo: '',
+                descripcion: '',
+                fecha_limite: '',
+                prioridad: 'media'
+            };
+
+            this.cargarTareas();
+        },
+        async toggleCompletada(task) {
+            await authFetch(`/api/tasks/${task.id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ completada: !task.completada })
+            });
+
+            task.completada = !task.completada;
+        },
+        async eliminarTarea(id) {
+            if (confirm('¿Eliminar esta tarea?')) {
+                await authFetch(`/api/tasks/${id}`, { method: 'DELETE' });
+                this.cargarTareas();
+            }
+        },
+        colorPrioridad(p) {
+            if (p === 'alta') return '#e53e3e';
+            if (p === 'media') return '#d69e2e';
+            return '#48bb78';
+        },
+        formatoFecha(fecha) {
+            if (!fecha) return 'Sin fecha límite';
+            return new Date(fecha).toLocaleDateString('es-ES');
+        }
+    },
+    mounted() {
+        this.cargarTareas();
+    }
+}).mount('#app');
+</script>
+
+</body>
+</html>

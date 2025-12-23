@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administrador - TaskFlow</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container" id="adminApp">
+        <div v-if="!logged">
+            <h1>Panel de Administración</h1>
+            <p>Ingrese la contraseña para acceder</p>
+            <input type="password" v-model="password" placeholder="Contraseña admin" @keyup.enter="login">
+            <button @click="login">Entrar como Admin</button>
+            <p style="color: red;" v-if="error">{{ error }}</p>
+        </div>
+
+        <div v-else>
+            <h1>Bienvenido, Administrador</h1>
+            <button @click="logout">Cerrar Sesión Admin</button>
+
+            <h2>Estadísticas Generales</h2>
+            <div class="stats">
+                <div>Usuarios registrados: {{ stats.total_users }}</div>
+                <div>Total tareas: {{ stats.total_tasks }}</div>
+                <div>Total categorías: {{ stats.total_categories }}</div>
+            </div>
+
+            <h2>Usuarios</h2>
+            <ul>
+                <li v-for="user in users">
+                    {{ user.nombre }} ({{ user.email }}) - Registrado: {{ user.fecha_registro }}
+                </li>
+            </ul>
+
+            <h2>Todas las Tareas (de todos los usuarios)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Usuario</th>
+                        <th>Categoría</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="task in tasks">
+                        <td>{{ task.titulo }}</td>
+                        <td>{{ task.usuario_nombre }} ({{ task.usuario_email }})</td>
+                        <td>{{ task.categoria || 'Sin categoría' }}</td>
+                        <td>{{ task.completada ? 'Completada' : 'Pendiente' }}</td>
+                        <td>{{ task.fecha_creacion }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/vue@3"></script>
+    <script src="static/script.js"></script>
+    <script>
+        const { createApp } = Vue
+        createApp({
+            data() {
+                return {
+                    logged: false,
+                    password: '',
+                    error: '',
+                    users: [],
+                    tasks: [],
+                    stats: {}
+                }
+            },
+            methods: {
+                async login() {
+                    const res = await fetch('/admin/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ password: this.password })
+                    })
+                    const data = await res.json()
+                    if (data.message) {
+                        this.logged = true
+                        this.loadAdminData()
+                    } else {
+                        this.error = data.error
+                    }
+                },
+                async logout() {
+                    await fetch('/admin/logout')
+                    location.reload()
+                },
+                async loadAdminData() {
+                    const [u, t, s] = await Promise.all([
+                        fetch('/api/admin/users').then(r => r.json()),
+                        fetch('/api/admin/all-tasks').then(r => r.json()),
+                        fetch('/api/admin/stats').then(r => r.json())
+                    ])
+                    this.users = u
+                    this.tasks = t
+                    this.stats = s
+                }
+            }
+        }).mount('#adminApp')
+    </script>
+</body>
+</html>
