@@ -1,24 +1,24 @@
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template
 from flask_cors import CORS
-from .database import get_db_connection
-from auth import auth_bp
-from api.tasks import tasks_bp
-from api.categories import categories_bp
-from api.users import users_bp
-import os
-from flask import session, redirect, url_for, request
-from flask import Flask
 import os
 
-# Ruta absoluta a las carpetas templates y static (fuera de backend)
+from .database import get_db_connection
+from .auth import auth_bp
+from .api.tasks import tasks_bp
+from .api.categories import categories_bp
+from .api.users import users_bp
+from .api.admin import admin_api_bp
+
+
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-PARENT_DIR = os.path.dirname(BASE_DIR)  # Sube un nivel para llegar a la raíz
+PARENT_DIR = os.path.dirname(BASE_DIR)
 
 app = Flask(
     __name__,
     template_folder=os.path.join(PARENT_DIR, 'templates'),
     static_folder=os.path.join(PARENT_DIR, 'static')
 )
+
 CORS(app)
 
 app.register_blueprint(auth_bp, url_prefix='/api')
