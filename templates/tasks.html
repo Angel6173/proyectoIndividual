@@ -8,19 +8,18 @@
 </head>
 <body>
     <nav class="main-nav">
-        <a href="/" class="brand">📋 TaskFlow</a>
+        <a href="/" class="brand"> TaskFlow</a>
         <div class="nav-links">
-            <a href="/" class="nav-link">🏠 Inicio</a>
-            <a href="/tasks" class="nav-link active">📝 Tareas</a>
-            <a href="/calendar" class="nav-link">📅 Calendario</a>
-            <button onclick="logout()" class="btn btn-outline btn-sm" id="logoutBtn" style="display:none;">🚪 Salir</button>
-            <a href="/login" id="loginBtn" class="btn btn-primary btn-sm">🔐 Iniciar sesión</a>
+            <a href="/tasks" class="nav-link active"> Tareas</a>
+            <a href="/calendar" class="nav-link"> Calendario</a>
+            <button onclick="logout()" class="btn btn-outline btn-sm" id="logoutBtn" style="display:none;"> Salir</button>
+            <a href="/login" id="loginBtn" class="btn btn-primary btn-sm"> Iniciar sesión</a>
         </div>
     </nav>
 
     <div class="container">
         <div class="card">
-            <h1>📋 Mis Tareas</h1>
+            <h1> Mis Tareas</h1>
 
             <div id="app">
                 <!-- Mensaje de error o requerir login -->
@@ -31,7 +30,7 @@
 
                 <!-- Filtro por categoría -->
                 <div v-if="!loading && !error" class="card mb-4" style="background: #f8f9fa;">
-                    <h3>📊 Filtros</h3>
+                    <h3> Filtros</h3>
                     <div class="form-group">
                         <label>Mostrar tareas de categoría:</label>
                         <select v-model="filtroCategoria" class="form-input">
@@ -45,7 +44,7 @@
 
                 <!-- Formulario nueva tarea -->
                 <div v-if="!loading && !error" class="card" style="background:#f0f4ff; margin-bottom:2rem;">
-                    <h3>➕ Nueva Tarea</h3>
+                    <h3> Nueva Tarea</h3>
                     
                     <div class="form-group">
                         <input v-model="newTask.titulo" class="form-input" placeholder="Título de la tarea *" required>
@@ -82,7 +81,7 @@
                     </div>
                     
                     <button @click="createTask" class="btn btn-primary mt-3" :disabled="!newTask.titulo.trim()">
-                        ➕ Agregar Tarea
+                         Agregar Tarea
                     </button>
                 </div>
 
@@ -95,10 +94,10 @@
                 <!-- Lista de tareas -->
                 <div v-if="!loading && !error">
                     <h3 v-if="tareasFiltradas.length > 0">
-                        📋 Tareas ([[ tareasFiltradas.length ]] mostradas)
+                         Tareas ([[ tareasFiltradas.length ]] mostradas)
                     </h3>
                     <div v-else class="text-center mt-4">
-                        <p>🎉 [[ filtroCategoria ? 'No hay tareas en esta categoría' : 'No tienes tareas todavía' ]]</p>
+                        <p> [[ filtroCategoria ? 'No hay tareas en esta categoría' : 'No tienes tareas todavía' ]]</p>
                         <p v-if="filtroCategoria">Prueba seleccionando "Todas las categorías"</p>
                     </div>
 
@@ -107,8 +106,8 @@
                              :class="['task-item', { completed: task.completada }, 'priority-' + task.prioridad]">
                             <div class="task-content">
                                 <div class="task-title">
-                                    <span v-if="task.completada">✅</span>
-                                    <span v-else>📌</span>
+                                    <span v-if="task.completada"></span>
+                                    <span v-else></span>
                                     [[ task.titulo ]]
                                     
                                     <span v-if="task.categoria" class="category-badge">
@@ -124,7 +123,7 @@
                                 
                                 <div class="task-meta">
                                     <span v-if="task.fecha_limite" class="meta-item">
-                                        📅 [[ formatDate(task.fecha_limite) ]]
+                                         [[ formatDate(task.fecha_limite) ]]
                                     </span>
                                 </div>
                             </div>
