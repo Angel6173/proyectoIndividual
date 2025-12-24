@@ -2,18 +2,17 @@ services:
   - type: web
     name: taskflow
     env: python
-    region: oregon
+    region: oregon        
     plan: free
     buildCommand: pip install -r requirements.txt
-    Root Directory: backend
-    Start Command: gunicorn app:app
+    startCommand: gunicorn app:app
     envVars:
       PYTHON_VERSION: 3.12.0
+      FLASK_ENV: production
+      SECRET_KEY: "SECRET_KEY"
 
 databases:
   - name: taskflow-db
     databaseName: taskflow_db
     user: taskflow_user
     plan: free
-
-

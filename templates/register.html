@@ -3,78 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro - TaskFlow</title>
+    <title>TaskFlow - Registro</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container">
         <div class="card">
-            <h1>📝 Crear Cuenta Nueva</h1>
-            <p style="text-align:center; color:#666; margin-bottom:2rem;">
-                Llena los campos para registrarte
-            </p>
-
+            <h1>📝 Crear Cuenta</h1>
+            
             <form id="registerForm">
-                <input type="text" id="nombre" placeholder="Nombre completo" required>
-                <input type="email" id="email" placeholder="Correo electrónico" required>
-                <input type="password" id="password" placeholder="Contraseña (mínimo 6 caracteres)" required minlength="6">
+                <div class="form-group">
+                    <input type="text" id="nombre" class="form-input" placeholder="Nombre completo" required>
+                </div>
+                <div class="form-group">
+                    <input type="email" id="email" class="form-input" placeholder="Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="password" class="form-input" placeholder="Contraseña (mínimo 6 caracteres)" required minlength="6">
+                </div>
                 
-                <button type="submit">Registrarse</button>
+                <button type="submit" class="btn btn-primary">Registrarse</button>
             </form>
-
-            <p id="mensaje" style="margin-top:1rem; text-align:center;"></p>
-
-            <p style="margin-top:2rem; text-align:center;">
+            
+            <p class="text-center mt-3">
                 ¿Ya tienes cuenta? <a href="/login">Inicia sesión aquí</a>
             </p>
+            
+            <div id="message" class="mt-3"></div>
         </div>
     </div>
-
-    <!-- Script simple SIN Vue para evitar errores de carga -->
+    
+    <script src="/static/script.js"></script>
     <script>
-        document.getElementById('registerForm').addEventListener('submit', async (e) => {
-            e.preventDefault(); // Evita que la página se recargue
-
-            const nombre = document.getElementById('nombre').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-
-            const mensaje = document.getElementById('mensaje');
-            mensaje.textContent = '';
-            mensaje.style.color = '#666';
-
-            if (!nombre || !email || password.length < 6) {
-                mensaje.textContent = 'Por favor completa todos los campos correctamente';
-                mensaje.style.color = '#e53e3e';
-                return;
+    document.getElementById('registerForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const nombre = document.getElementById('nombre').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const message = document.getElementById('message');
+        message.innerHTML = '';
+        
+        if (password.length < 6) {
+            message.innerHTML = '<div class="alert alert-error">La contraseña debe tener al menos 6 caracteres</div>';
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre, email, password })
+            });
+            
+            const data = await response.json();
+            
+            if (response.status === 201) {
+                message.innerHTML = '<div class="alert alert-success">¡Cuenta creada exitosamente! Redirigiendo al login...</div>';
+                setTimeout(() => window.location.href = '/login', 2000);
+            } else {
+                message.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
             }
-
-            try {
-                const res = await fetch('/api/register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ nombre, email, password })
-                });
-
-                const data = await res.json();
-
-                if (res.status === 201) {
-                    mensaje.textContent = '¡Cuenta creada exitosamente! Redirigiendo al login...';
-                    mensaje.style.color = '#48bb78';
-                    setTimeout(() => {
-                        window.location.href = '/login';
-                    }, 2000);
-                } else {
-                    mensaje.textContent = data.error || 'Error al registrar. Intenta con otro email.';
-                    mensaje.style.color = '#e53e3e';
-                }
-            } catch (err) {
-                mensaje.textContent = 'Error de conexión. Revisa que el servidor esté corriendo.';
-                mensaje.style.color = '#e53e3e';
-            }
-        });
+        } catch (error) {
+            message.innerHTML = '<div class="alert alert-error">Error de conexión</div>';
+        }
+    });
     </script>
 </body>
 </html>

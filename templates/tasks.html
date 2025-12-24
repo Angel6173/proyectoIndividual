@@ -3,168 +3,327 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mis Tareas - TaskFlow</title>
+    <title>TaskFlow - Mis Tareas</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-
-<nav>
-    <a href="/">Inicio</a>
-    <a href="/tasks">Mis Tareas</a>
-    <a href="javascript:logout()">Cerrar Sesión</a>
-</nav>
-
-<div class="container">
-    <div class="card">
-        <h1>📋 Mis Tareas</h1>
-
-        {% raw %}
-        <div id="app">
-
-            <!-- Nueva tarea -->
-            <div class="card" style="margin-bottom:2rem; background:#f0f4ff;">
-                <h2>Nueva Tarea</h2>
-
-                <input v-model="nueva.titulo" placeholder="Título de la tarea" required>
-
-                <textarea v-model="nueva.descripcion"
-                          placeholder="Descripción (opcional)"
-                          rows="3"></textarea>
-
-                <input type="date" v-model="nueva.fecha_limite">
-
-                <select v-model="nueva.prioridad">
-                    <option value="baja">🟢 Baja</option>
-                    <option value="media">🟡 Media</option>
-                    <option value="alta">🔴 Alta</option>
-                </select>
-
-                <button @click="crearTarea" :disabled="!nueva.titulo.trim()">
-                    + Agregar Tarea
-                </button>
-            </div>
-
-            <!-- Lista de tareas -->
-            <ul class="task-list">
-                <li v-for="task in tareas"
-                    :key="task.id"
-                    :class="['task-item', { completed: task.completada }]">
-
-                    <div class="task-content">
-                        <strong>{{ task.titulo }}</strong>
-
-                        <p v-if="task.descripcion">
-                            {{ task.descripcion }}
-                        </p>
-
-                        <small>
-                            Prioridad:
-                            <strong :style="{ color: colorPrioridad(task.prioridad) }">
-                                {{ task.prioridad.toUpperCase() }}
-                            </strong>
-                            • Vence: {{ formatoFecha(task.fecha_limite) }}
-                        </small>
-                    </div>
-
-                    <div class="task-actions">
-                        <button @click="toggleCompletada(task)">
-                            <span v-if="task.completada">↩️ Desmarcar</span>
-                            <span v-else>✅ Completar</span>
-                        </button>
-
-                        <button @click="eliminarTarea(task.id)"
-                                style="background:#e53e3e;">
-                            🗑️ Eliminar
-                        </button>
-                    </div>
-                </li>
-            </ul>
-
-            <p v-if="tareas.length === 0"
-               style="text-align:center; color:#888; font-size:1.2rem; margin-top:3rem;">
-                🎉 ¡No tienes tareas pendientes! <br>
-                Crea una arriba para comenzar.
-            </p>
-
+    <nav class="main-nav">
+        <a href="/" class="brand">📋 TaskFlow</a>
+        <div class="nav-links">
+            <a href="/" class="nav-link">🏠 Inicio</a>
+            <a href="/tasks" class="nav-link active">📝 Tareas</a>
+            <a href="/calendar" class="nav-link">📅 Calendario</a>
+            <button onclick="logout()" class="btn btn-outline btn-sm" id="logoutBtn" style="display:none;">🚪 Salir</button>
+            <a href="/login" id="loginBtn" class="btn btn-primary btn-sm">🔐 Iniciar sesión</a>
         </div>
-        {% endraw %}
+    </nav>
 
+    <div class="container">
+        <div class="card">
+            <h1>📋 Mis Tareas</h1>
+
+            <div id="app">
+                <!-- Mensaje de error o requerir login -->
+                <div v-if="error" class="alert alert-error mt-3">
+                    [[ error ]]
+                    <button @click="goToLogin" class="btn btn-sm ml-2">Ir a Login</button>
+                </div>
+
+                <!-- Filtro por categoría -->
+                <div v-if="!loading && !error" class="card mb-4" style="background: #f8f9fa;">
+                    <h3>📊 Filtros</h3>
+                    <div class="form-group">
+                        <label>Mostrar tareas de categoría:</label>
+                        <select v-model="filtroCategoria" class="form-input">
+                            <option value="">Todas las categorías</option>
+                            <option v-for="cat in categoriasDisponibles" :key="cat" :value="cat">
+                                [[ cat ]]
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Formulario nueva tarea -->
+                <div v-if="!loading && !error" class="card" style="background:#f0f4ff; margin-bottom:2rem;">
+                    <h3>➕ Nueva Tarea</h3>
+                    
+                    <div class="form-group">
+                        <input v-model="newTask.titulo" class="form-input" placeholder="Título de la tarea *" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <textarea v-model="newTask.descripcion" class="form-input" placeholder="Descripción (opcional)" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-row" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
+                        <div class="form-group" style="flex: 1; min-width: 180px;">
+                            <label>Fecha límite</label>
+                            <input type="date" v-model="newTask.fecha_limite" class="form-input">
+                        </div>
+                        
+                        <div class="form-group" style="flex: 1; min-width: 160px;">
+                            <label>Prioridad</label>
+                            <select v-model="newTask.prioridad" class="form-input">
+                                <option value="baja">🟢 Baja</option>
+                                <option value="media">🟡 Media</option>
+                                <option value="alta">🔴 Alta</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" style="flex: 2; min-width: 250px;">
+                            <label>Categoría</label>
+                            <select v-model="newTask.categoria" class="form-input">
+                                <option value="">Sin categoría</option>
+                                <option v-for="cat in categoriasDisponibles" :key="cat" :value="cat">
+                                    [[ cat ]]
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button @click="createTask" class="btn btn-primary mt-3" :disabled="!newTask.titulo.trim()">
+                        ➕ Agregar Tarea
+                    </button>
+                </div>
+
+                <!-- Loading -->
+                <div v-if="loading" class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Cargando tareas...</p>
+                </div>
+
+                <!-- Lista de tareas -->
+                <div v-if="!loading && !error">
+                    <h3 v-if="tareasFiltradas.length > 0">
+                        📋 Tareas ([[ tareasFiltradas.length ]] mostradas)
+                    </h3>
+                    <div v-else class="text-center mt-4">
+                        <p>🎉 [[ filtroCategoria ? 'No hay tareas en esta categoría' : 'No tienes tareas todavía' ]]</p>
+                        <p v-if="filtroCategoria">Prueba seleccionando "Todas las categorías"</p>
+                    </div>
+
+                    <div class="task-list">
+                        <div v-for="task in tareasFiltradas" :key="task.id" 
+                             :class="['task-item', { completed: task.completada }, 'priority-' + task.prioridad]">
+                            <div class="task-content">
+                                <div class="task-title">
+                                    <span v-if="task.completada">✅</span>
+                                    <span v-else>📌</span>
+                                    [[ task.titulo ]]
+                                    
+                                    <span v-if="task.categoria" class="category-badge">
+                                        [[ task.categoria ]]
+                                    </span>
+                                    
+                                    <span :class="['priority-badge', 'priority-' + task.prioridad]">
+                                        [[ task.prioridad.charAt(0).toUpperCase() + task.prioridad.slice(1) ]]
+                                    </span>
+                                </div>
+
+                                <p v-if="task.descripcion" class="task-desc">[[ task.descripcion ]]</p>
+                                
+                                <div class="task-meta">
+                                    <span v-if="task.fecha_limite" class="meta-item">
+                                        📅 [[ formatDate(task.fecha_limite) ]]
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="task-actions">
+                                <button @click="toggleTask(task.id)" class="action-btn" 
+                                        :title="task.completada ? 'Marcar como pendiente' : 'Marcar como completada'">
+                                    <span v-if="task.completada">↩️</span>
+                                    <span v-else>✅</span>
+                                </button>
+                                <button @click="deleteTask(task.id)" class="action-btn" title="Eliminar tarea">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
 
-<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-<script src="/static/script.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const { createApp } = Vue;
 
-<script>
-const { createApp } = Vue;
+        createApp({
+            delimiters: ['[[', ']]'],
 
-createApp({
-    data() {
-        return {
-            tareas: [],
-            nueva: {
-                titulo: '',
-                descripcion: '',
-                fecha_limite: '',
-                prioridad: 'media'
+            data() {
+                return {
+                    tasks: [],
+                    newTask: {
+                        titulo: '',
+                        descripcion: '',
+                        fecha_limite: '',
+                        prioridad: 'media',
+                        categoria: ''
+                    },
+                    filtroCategoria: '',
+                    categoriasDisponibles: [
+                        "Trabajo", "Reuniones", "Proyectos", "Educación", "Estudio",
+                        "Tareas universitarias", "Exámenes", "Hogar", "Limpieza", "Compras",
+                        "Mantenimiento", "Salud", "Ejercicio", "Médico", "Medicamentos",
+                        "Bienestar mental", "Personal", "Crecimiento personal", "Hobbies",
+                        "Lectura", "Finanzas", "Pagos", "Presupuesto", "Inversiones",
+                        "Ocio", "Entretenimiento", "Viajes", "Eventos sociales", "Otros"
+                    ],
+                    loading: true,
+                    error: ''
+                }
+            },
+
+            computed: {
+                tareasFiltradas() {
+                    if (!this.filtroCategoria) return this.tasks;
+                    return this.tasks.filter(t => t.categoria === this.filtroCategoria);
+                }
+            },
+
+            methods: {
+                async loadTasks() {
+                    this.loading = true;
+                    this.error = '';
+                    
+                    const token = localStorage.getItem('token');
+                    const headers = {};
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                    try {
+                        const response = await fetch('/api/tasks', { headers });
+                        
+                        if (response.ok) {
+                            this.tasks = await response.json();
+                        } else if (response.status === 401 && token) {
+                            this.error = 'Sesión expirada. Por favor inicia sesión.';
+                            localStorage.removeItem('token');
+                        } else {
+                            this.tasks = [];
+                            // Permitimos ver la página sin login
+                        }
+                    } catch (err) {
+                        this.error = 'Error de conexión con el servidor';
+                        console.error(err);
+                    } finally {
+                        this.loading = false;
+                        this.updateNavButtons();
+                    }
+                },
+
+                async createTask() {
+                    if (!this.newTask.titulo.trim()) {
+                        alert('El título es requerido');
+                        return;
+                    }
+                    
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        alert('Necesitas iniciar sesión para crear tareas');
+                        window.location.href = '/login';
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('/api/tasks', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(this.newTask)
+                        });
+                        
+                        if (response.ok) {
+                            this.newTask = { titulo: '', descripcion: '', fecha_limite: '', prioridad: 'media', categoria: '' };
+                            await this.loadTasks();
+                            alert('Tarea creada exitosamente');
+                        } else {
+                            alert('Error al crear la tarea');
+                        }
+                    } catch (err) {
+                        alert('Error de conexión');
+                    }
+                },
+
+                async toggleTask(id) {
+                    const token = localStorage.getItem('token');
+                    if (!token) return;
+                    
+                    const task = this.tasks.find(t => t.id === id);
+                    if (!task) return;
+
+                    try {
+                        const response = await fetch(`/api/tasks/${id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ completada: !task.completada })
+                        });
+                        
+                        if (response.ok) {
+                            task.completada = !task.completada;
+                        }
+                    } catch (err) {
+                        console.error('Error al actualizar:', err);
+                    }
+                },
+
+                async deleteTask(id) {
+                    if (!confirm('¿Eliminar esta tarea?')) return;
+                    
+                    const token = localStorage.getItem('token');
+                    if (!token) return;
+
+                    try {
+                        const response = await fetch(`/api/tasks/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        
+                        if (response.ok) await this.loadTasks();
+                    } catch (err) {
+                        console.error('Error al eliminar:', err);
+                    }
+                },
+
+                formatDate(date) {
+                    if (!date) return 'Sin fecha';
+                    return new Date(date).toLocaleDateString('es-ES', {
+                        weekday: 'short',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                },
+
+                goToLogin() {
+                    window.location.href = '/login';
+                },
+
+                updateNavButtons() {
+                    const hasToken = !!localStorage.getItem('token');
+                    document.getElementById('logoutBtn').style.display = hasToken ? 'inline-block' : 'none';
+                    document.getElementById('loginBtn').style.display = hasToken ? 'none' : 'inline-block';
+                }
+            },
+
+            mounted() {
+                this.loadTasks();
             }
-        }
-    },
-    methods: {
-        async cargarTareas() {
-            const res = await authFetch('/api/tasks');
-            if (res.ok) {
-                this.tareas = await res.json();
-            } else {
-                window.location.href = '/login';
-            }
-        },
-        async crearTarea() {
-            if (!this.nueva.titulo.trim()) return;
+        }).mount('#app');
 
-            await authFetch('/api/tasks', {
-                method: 'POST',
-                body: JSON.stringify(this.nueva)
-            });
-
-            this.nueva = {
-                titulo: '',
-                descripcion: '',
-                fecha_limite: '',
-                prioridad: 'media'
-            };
-
-            this.cargarTareas();
-        },
-        async toggleCompletada(task) {
-            await authFetch(`/api/tasks/${task.id}`, {
-                method: 'PUT',
-                body: JSON.stringify({ completada: !task.completada })
-            });
-
-            task.completada = !task.completada;
-        },
-        async eliminarTarea(id) {
-            if (confirm('¿Eliminar esta tarea?')) {
-                await authFetch(`/api/tasks/${id}`, { method: 'DELETE' });
-                this.cargarTareas();
-            }
-        },
-        colorPrioridad(p) {
-            if (p === 'alta') return '#e53e3e';
-            if (p === 'media') return '#d69e2e';
-            return '#48bb78';
-        },
-        formatoFecha(fecha) {
-            if (!fecha) return 'Sin fecha límite';
-            return new Date(fecha).toLocaleDateString('es-ES');
-        }
-    },
-    mounted() {
-        this.cargarTareas();
-    }
-}).mount('#app');
-</script>
-
+        // Logout global
+        window.logout = function() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        };
+    </script>
 </body>
 </html>

@@ -3,46 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - TaskFlow</title>
-    <link rel="stylesheet" href="static/style.css">
+    <title>TaskFlow - Login</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container">
         <div class="card">
             <h1>🔐 Iniciar Sesión</h1>
-            <div id="app">
-                <input type="email" v-model="email" placeholder="Email">
-                <input type="password" v-model="password" placeholder="Contraseña" @keyup.enter="login">
-                <button @click="login">Entrar</button>
-                <p class="error" v-if="error">{{ error }}</p>
-                <p>¿No tienes cuenta? <a href="/register">Regístrate aquí</a></p>
-            </div>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <input type="email" id="email" class="form-input" placeholder="Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="password" class="form-input" placeholder="Contraseña" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Entrar</button>
+            </form>
+            
+            <p class="text-center mt-3">
+                ¿No tienes cuenta? <a href="/register">Regístrate aquí</a>
+            </p>
+            
+            <div id="message" class="mt-3"></div>
         </div>
     </div>
-
-    <script src="https://unpkg.com/vue@3"></script>
-    <script>
-        Vue.createApp({
-            data() {
-                return { email: '', password: '', error: '' }
-            },
-            methods: {
-                async login() {
-                    const res = await fetch('/api/login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: this.email, password: this.password })
-                    });
-                    const data = await res.json();
-                    if (data.token) {
-                        localStorage.setItem('token', data.token);
-                        window.location.href = '/';
-                    } else {
-                        this.error = data.error || 'Error al iniciar sesión';
-                    }
-                }
-            }
-        }).mount('#app')
-    </script>
+    
+    <script src="/static/script.js"></script>
+<script>
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const message = document.getElementById('message');
+    message.innerHTML = '';
+    
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            
+            let msg = data.user.is_admin 
+                ? '¡Bienvenido, Administrador! Redirigiendo al panel...' 
+                : '¡Bienvenido! Redirigiendo a tus tareas...';
+            
+            message.innerHTML = `<div class="alert alert-success">${msg}</div>`;
+            
+            setTimeout(() => {
+                window.location.href = data.redirect;
+            }, 1200);
+        } else {
+            message.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+        }
+    } catch (error) {
+        message.innerHTML = '<div class="alert alert-error">Error de conexión</div>';
+    }
+});
+</script>
 </body>
 </html>
