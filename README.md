@@ -16,4 +16,4 @@ Incluye un calendario interactivo para visualizar tareas por fecha y un panel de
 
 **Autor:** Angel Gabriel Hancco Flores 
 **Profesor:** Aedo Lopez Marco Wilfredo
-**Curso:** Introducción al desarrollo de software
+**Curso:** Introducción al desarrollo web
